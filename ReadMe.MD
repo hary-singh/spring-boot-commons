@@ -30,10 +30,6 @@ repositories {
     maven {
         name = "GitHubPackages"
         url = uri("https://maven.pkg.github.com/hary-singh/spring-boot-commons")
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-        }
     }
     mavenCentral()
 }
@@ -43,7 +39,7 @@ repositories {
 
 ```groovy
 dependencies {
-    implementation 'dev.harryy:spring-boot-commons:0.0.1-SNAPSHOT'
+  implementation 'dev.harryy:spring-boot-commons:0.0.1'
 }
 ```
 
