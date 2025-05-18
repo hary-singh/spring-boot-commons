@@ -1,0 +1,138 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'maven-publish'
+}
+
+group = 'dev.harryy'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://artifacts.elastic.co/maven"
+    }
+    // OpenTelemetry Instrumentation repository
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+    // OpenTelemetry instrumentation repository
+    maven {
+        url "https://maven.pkg.jetbrains.space/public/p/ktor/eap"
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom SpringBootPlugin.BOM_COORDINATES
+    }
+}
+
+dependencies {
+    api 'org.springframework.boot:spring-boot-starter-actuator'
+    api 'org.springframework.boot:spring-boot-starter-web'
+    api 'io.micrometer:micrometer-registry-prometheus'
+    api 'io.micrometer:micrometer-tracing-bridge-otel'
+    api 'net.logstash.logback:logstash-logback-encoder:8.1'
+
+    // OpenTelemetry core - stable versions without alpha suffixes
+    api 'io.opentelemetry:opentelemetry-api:1.31.0'
+    api 'io.opentelemetry:opentelemetry-sdk:1.31.0'
+    api 'io.opentelemetry:opentelemetry-exporter-otlp:1.31.0'
+
+    // Use BOM for consistent dependency management
+    api platform('io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:1.31.0-alpha')
+
+    // Auto-instrumentation modules
+    api 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-api'
+    api 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations'
+
+    // Explicitly adding the logback MDC integration for distributed tracing
+    api 'io.opentelemetry.instrumentation:opentelemetry-logback-mdc-1.0'
+
+    api 'org.springframework:spring-aop'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+    testImplementation 'io.opentelemetry:opentelemetry-sdk-testing:1.31.0'
+}
+
+// Configure the test task to show more details and always run tests
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
+    // Force tests to run even if they haven't changed
+    outputs.upToDateWhen { false }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId = 'dev.harryy'
+            artifactId = 'spring-boot-commons'
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+
+            pom {
+                name = 'Spring Boot Commons'
+                description = 'Common configurations for Spring Boot microservices'
+                url = 'https://github.com/hary-singh/spring-boot-commons'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'hary-singh'
+                        name = 'Hary Singh'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri("https://maven.pkg.github.com/hary-singh/spring-boot-commons")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+tasks.named('bootJar') {
+    enabled = false
+}
+
+tasks.named('jar') {
+    enabled = true
+}
