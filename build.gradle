@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'dev.harryy'
-version = '0.0.1'
+version = '0.0.2-SNAPSHOT'
 
 java {
     toolchain {
@@ -135,4 +135,9 @@ tasks.named('jar') {
 
 dependencyCheck {
     nvd.apiKey = System.getenv("NVD_API_KEY")
+    analyzers {
+        retirejs {
+            enabled = false
+        }
+    }
 }

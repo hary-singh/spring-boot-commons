@@ -2,24 +2,14 @@
 <configuration>
     <springProperty scope="context" name="springAppName" source="spring.application.name"/>
 
+    <!-- Console appender with human-readable format -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdcKeyName>traceId</includeMdcKeyName>
-            <includeMdcKeyName>spanId</includeMdcKeyName>
-            <includeMdcKeyName>userId</includeMdcKeyName>
-            <includeMdcKeyName>requestId</includeMdcKeyName>
-            <fieldNames>
-                <timestamp>timestamp</timestamp>
-                <message>message</message>
-                <logger>logger</logger>
-                <thread>thread</thread>
-                <level>level</level>
-                <levelValue>[ignore]</levelValue>
-            </fieldNames>
-            <customFields>{"service":"${springAppName:-unknown-service}"}</customFields>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n%yellow(%mdc)</pattern>
         </encoder>
     </appender>
 
+    <!-- JSON file appender for structured logging -->
     <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/${springAppName:-application}.json</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -36,13 +26,18 @@
     </appender>
 
     <!-- OpenTelemetry trace context MDC integration -->
-    <appender name="OTEL_MDC" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
+    <appender name="OTEL_CONSOLE_MDC" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
         <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <appender name="OTEL_JSON_MDC" class="io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender">
         <appender-ref ref="JSON_FILE"/>
     </appender>
 
+    <!-- Root logger configuration -->
     <root level="INFO">
-        <appender-ref ref="OTEL_MDC"/>
+        <appender-ref ref="OTEL_CONSOLE_MDC"/>
+        <appender-ref ref="OTEL_JSON_MDC"/>
     </root>
 
     <!-- Application-specific loggers -->
@@ -53,4 +48,3 @@
     <logger name="org.hibernate" level="INFO"/>
     <logger name="org.apache" level="WARN"/>
 </configuration>
-
